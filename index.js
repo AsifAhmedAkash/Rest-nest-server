@@ -38,6 +38,16 @@ async function run() {
         const database = client.db(process.env.DB_NAME);
         const jobCollection = database.collection('property');
 
+        app.get('/api/properties', async (req, res) => {
+            const query = {};
+            if (req.query.ownerId) {
+                query.ownerInformation = req.query.ownerId;
+            }
+
+            const cursor = jobCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
 
         app.post('/api/property', async (req, res) => {
             const job = req.body;
