@@ -41,15 +41,22 @@ async function run() {
 
         app.get('/api/properties', async (req, res) => {
             const query = {};
-            if (req.query.ownerId) {
-                query.ownerInformation = req.query.ownerId;
+            if (req.query.ownerId) query.ownerInformation = req.query.ownerId;
+            if (req.query.location) query.location = { $regex: req.query.location, $options: 'i' };
+            if (req.query.propertyType && req.query.propertyType !== 'All Types') {
+                query.propertyType = req.query.propertyType;
             }
 
-            const cursor = jobCollection.find(query);
-            const result = await cursor.toArray();
+            let result = await jobCollection.find(query).toArray();
+
+            if (req.query.sort === 'low-to-high') {
+                result.sort((a, b) => Number(a.rent) - Number(b.rent));
+            } else if (req.query.sort === 'high-to-low') {
+                result.sort((a, b) => Number(b.rent) - Number(a.rent));
+            }
+
             res.send(result);
         })
-
         app.post('/api/property', async (req, res) => {
             const job = req.body;
             const result = await jobCollection.insertOne(job);
