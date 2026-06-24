@@ -30,6 +30,8 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
+
+    // 58-6
     try {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
@@ -76,6 +78,18 @@ async function run() {
             }
             const result = await ownerCollection.findOne(query);
             res.json(result ?? {});  // ← never send empty body
+        })
+
+        const { ObjectId } = require('mongodb');
+
+        app.get('/api/properties/:id', async (req, res) => {
+            try {
+                const result = await jobCollection.findOne({ _id: new ObjectId(req.params.id) });
+                res.json(result ?? {});
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Failed to fetch property' });
+            }
         })
 
 
