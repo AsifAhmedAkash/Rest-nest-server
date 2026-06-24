@@ -37,6 +37,7 @@ async function run() {
 
         const database = client.db(process.env.DB_NAME);
         const jobCollection = database.collection('property');
+        const ownerCollection = database.collection('owner');
 
         app.get('/api/properties', async (req, res) => {
             const query = {};
@@ -55,6 +56,20 @@ async function run() {
             res.send(result);
         })
 
+        app.post('/api/ownerinfo', async (req, res) => {
+            const ownerinfo = req.body;
+            const result = await ownerCollection.insertOne(ownerinfo);
+            res.send(result);
+        })
+
+        app.get('/api/ownerinfo', async (req, res) => {
+            const query = {};
+            if (req.query.userId) {
+                query.userId = req.query.userId;
+            }
+            const result = await ownerCollection.findOne(query);
+            res.json(result ?? {});  // ← never send empty body
+        })
 
 
 
