@@ -4,6 +4,8 @@ require('dotenv').config();
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
+const Stripe = require('stripe');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -35,12 +37,60 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
-
+        const { ObjectId } = require('mongodb');
 
         const database = client.db(process.env.DB_NAME);
         const jobCollection = database.collection('property');
         const ownerCollection = database.collection('owner');
         const bookPopertyCollection = database.collection('booking');
+
+        const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+        const paymentCollection = database.collection('payments');
+
+
+        //payments
+        app.post('/api/create-payment-intent', async (req, res) => {
+            try {
+                const { amount, currency } = req.body;
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount,
+                    currency: currency ?? 'bdt',
+                });
+                res.json({ clientSecret: paymentIntent.client_secret });
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ error: err.message });
+            }
+        })
+
+        app.post('/api/payments', async (req, res) => {
+            try {
+                const result = await paymentCollection.insertOne(req.body);
+                res.json(result);
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Failed to save payment' });
+            }
+        })
+
+        app.get('/api/payments', async (req, res) => {
+            const query = {};
+            if (req.query.tenantUserId) query.tenantUserId = req.query.tenantUserId;
+            if (req.query.ownerId) query.ownerId = req.query.ownerId;
+            const result = await paymentCollection.find(query).sort({ paidAt: -1 }).toArray();
+            res.json(result);
+        })
+
+        app.get('/api/properties/:id', async (req, res) => {
+            try {
+                const result = await jobCollection.findOne({ _id: new ObjectId(req.params.id) });
+                res.json(result ?? {});
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Failed to fetch property' });
+            }
+        })
+
 
         app.get('/api/properties', async (req, res) => {
             const query = {};
@@ -72,6 +122,29 @@ async function run() {
             res.send(result);
         })
 
+        app.put('/api/properties/:id', async (req, res) => {
+            try {
+                const { ObjectId } = require('mongodb');
+                const result = await jobCollection.updateOne(
+                    { _id: new ObjectId(req.params.id) },
+                    { $set: req.body }
+                );
+                res.json(result);
+            } catch (err) {
+                res.status(500).json({ error: 'Failed to update property' });
+            }
+        })
+
+        app.delete('/api/properties/:id', async (req, res) => {
+            try {
+                const { ObjectId } = require('mongodb');
+                const result = await jobCollection.deleteOne({ _id: new ObjectId(req.params.id) });
+                res.json(result);
+            } catch (err) {
+                res.status(500).json({ error: 'Failed to delete property' });
+            }
+        })
+
         //bbooking related
         app.post('/api/booking', async (req, res) => {
             const bookinginfo = req.body;
@@ -92,17 +165,8 @@ async function run() {
             res.json(result ?? {});  // ← never send empty body
         })
 
-        const { ObjectId } = require('mongodb');
 
-        app.get('/api/properties/:id', async (req, res) => {
-            try {
-                const result = await jobCollection.findOne({ _id: new ObjectId(req.params.id) });
-                res.json(result ?? {});
-            } catch (err) {
-                console.error(err);
-                res.status(500).json({ error: 'Failed to fetch property' });
-            }
-        })
+
 
 
 
