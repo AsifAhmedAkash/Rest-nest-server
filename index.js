@@ -11,18 +11,18 @@ const port = process.env.PORT || 3000;
 
 const uri = process.env.MONGODB_URI;
 
-// Middleware
+
 app.use(cors());
 app.use(express.json());
 
-// Home route
+
 app.get('/', (req, res) => {
     res.send('Server is running');
 });
 
 
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -35,7 +35,7 @@ async function run() {
 
 
     try {
-        // Connect the client to the server	(optional starting in v4.7)
+
         await client.connect();
         const { ObjectId } = require('mongodb');
 
@@ -341,6 +341,4 @@ async function run() {
 run().catch(console.dir);
 
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+module.exports = app;
