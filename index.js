@@ -31,7 +31,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
 
-    // 58-6
+    // 59-2 -- 5.25min
     try {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
@@ -40,6 +40,7 @@ async function run() {
         const database = client.db(process.env.DB_NAME);
         const jobCollection = database.collection('property');
         const ownerCollection = database.collection('owner');
+        const bookPopertyCollection = database.collection('booking');
 
         app.get('/api/properties', async (req, res) => {
             const query = {};
@@ -68,6 +69,17 @@ async function run() {
         app.post('/api/ownerinfo', async (req, res) => {
             const ownerinfo = req.body;
             const result = await ownerCollection.insertOne(ownerinfo);
+            res.send(result);
+        })
+
+        //bbooking related
+        app.post('/api/booking', async (req, res) => {
+            const bookinginfo = req.body;
+            const newBookinginfo = {
+                ...bookinginfo,
+                createAt: new Date()
+            }
+            const result = await bookPopertyCollection.insertOne(newBookinginfo);
             res.send(result);
         })
 
